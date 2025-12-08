@@ -44,3 +44,14 @@ export const auth0Middleware = (options?: Auth0MiddlewareOptions): MiddlewareFun
     return next();
   };
 };
+
+export const requireAuth: MiddlewareFunction<Response> = async ({ context, request }, next) => {
+  const { isAuthenticated, appBaseUrl } = context.get(auth0Context) as Auth0ContextType;
+  if (!isAuthenticated) {
+    const url = new URL(request.url);
+    const returnTo = url.pathname + url.search;
+    const loginUrl = `${appBaseUrl}/auth/login?returnTo=${encodeURIComponent(returnTo)}`;
+    return Response.redirect(loginUrl, 302);
+  }
+  return next();
+};

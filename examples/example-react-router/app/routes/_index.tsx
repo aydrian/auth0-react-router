@@ -29,12 +29,20 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           <h1 className="text-2xl font-bold">
             Welcome, {user.name || user.email || "User"}!
           </h1>
-          <a
-            href="/auth/logout"
-            className="mt-4 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded shadow"
-          >
-            Log out
-          </a>
+          <div className="flex gap-4 mt-4">
+            <a
+              href="/profile"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow"
+            >
+              View Profile
+            </a>
+            <a
+              href="/auth/logout"
+              className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded shadow"
+            >
+              Log out
+            </a>
+          </div>
         </header>
       </div>
     </main>
