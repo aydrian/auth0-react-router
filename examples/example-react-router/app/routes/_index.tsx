@@ -1,6 +1,6 @@
 import type { Route } from "./+types/_index";
 import { Welcome } from "../welcome/welcome";
-import { auth0Client } from "~/utils/auth0.server";
+import { auth0Context } from "@auth0/auth0-react-router";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -9,10 +9,10 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-export async function loader({ request }: Route.LoaderArgs) {
-  const user = await auth0Client.getUser({ request, response: new Response() });
+export async function loader({ context }: Route.LoaderArgs) {
+  const auth0 = context.get(auth0Context);
 
-  return { user };
+  return { user: auth0?.user };
 }
 
 export default function Home({ loaderData }: Route.ComponentProps) {

@@ -1,13 +1,11 @@
 import { auth0Context, Auth0ContextType } from './auth0Middleware.js';
 import type { LoaderFunctionArgs } from 'react-router';
 
-// TODO: Handle app base url better
-
 export async function loginRoute({ request, context }: LoaderFunctionArgs) {
-  const { auth0Client } = context.get(auth0Context) as Auth0ContextType;
+  const { appBaseUrl, auth0Client } = context.get(auth0Context) as Auth0ContextType;
   // Build the Auth0 authorize URL and redirect
   const url = new URL(request.url);
-  const returnTo = url.searchParams.get('returnTo') || 'http://localhost:5173';
+  const returnTo = url.searchParams.get('returnTo') || appBaseUrl;
   console.log({ returnTo });
 
   const response = new Response();
@@ -25,10 +23,10 @@ export async function loginRoute({ request, context }: LoaderFunctionArgs) {
 }
 
 export async function callbackRoute({ context, request }: LoaderFunctionArgs) {
-  const { auth0Client } = context.get(auth0Context) as Auth0ContextType;
+  const { appBaseUrl, auth0Client } = context.get(auth0Context) as Auth0ContextType;
   const response = new Response();
   const { appState } = await auth0Client.completeInteractiveLogin<{ returnTo: string }>(
-    new URL(request.url, 'http://localhost:5173'),
+    new URL(request.url, appBaseUrl),
     {
       request,
       response,
@@ -43,9 +41,9 @@ export async function callbackRoute({ context, request }: LoaderFunctionArgs) {
 }
 
 export async function logoutRoute({ request, context }: LoaderFunctionArgs) {
-  const { auth0Client } = context.get(auth0Context) as Auth0ContextType;
+  const { appBaseUrl, auth0Client } = context.get(auth0Context) as Auth0ContextType;
   const response = new Response();
-  const returnTo = 'http://localhost:5173';
+  const returnTo = appBaseUrl;
   const logoutUrl = await auth0Client.logout({ returnTo }, { request, response });
 
   const headers = new Headers(response.headers);

@@ -3,6 +3,7 @@ import { createCookieSessionStorage } from 'react-router';
 import { ReactRouterTransactionStore } from './store/react-router-transaction-store.js';
 import { ReactRouterSessionStore } from './store/react-router-session-store.js';
 import type { Auth0ReactRouterOptions } from './types.js';
+import { getAuth0Options } from './utils.js';
 
 const StateStorage = createCookieSessionStorage<StateData>({
   cookie: {
@@ -24,26 +25,27 @@ const TransactionStorage = createCookieSessionStorage<TransactionData>({
   },
 });
 
-export function Auth0(options: Auth0ReactRouterOptions) {
+export function Auth0(options?: Auth0ReactRouterOptions) {
+  const resolvedOptions = getAuth0Options(options);
   const callbackPath = '/auth/callback';
-  const redirectUri = new URL(callbackPath, options.appBaseUrl);
+  const redirectUri = new URL(callbackPath, resolvedOptions.appBaseUrl);
 
   const auth0Client = new ServerClient({
-    domain: options.domain,
-    clientId: options.clientId,
-    clientSecret: options.clientSecret,
+    domain: resolvedOptions.domain,
+    clientId: resolvedOptions.clientId,
+    clientSecret: resolvedOptions.clientSecret,
     authorizationParams: {
       redirect_uri: redirectUri.toString(),
     },
     transactionStore: new ReactRouterTransactionStore(
-      { secret: options.sessionSecret || 'dev-secret' },
+      { secret: resolvedOptions.sessionSecret || 'dev-secret' },
       TransactionStorage
     ),
-    stateStore: new ReactRouterSessionStore({ secret: options.sessionSecret || 'dev-secret' }, StateStorage),
+    stateStore: new ReactRouterSessionStore({ secret: resolvedOptions.sessionSecret || 'dev-secret' }, StateStorage),
   });
 
   return auth0Client;
 }
 
-export { auth0Middleware } from './auth0Middleware.js';
+export { auth0Middleware, auth0Context } from './auth0Middleware.js';
 export { authSplatLoader } from './authSplatLoader.js';
