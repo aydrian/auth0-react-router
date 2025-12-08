@@ -4,23 +4,29 @@ import {
   Meta,
   Outlet,
   Scripts,
-  ScrollRestoration,
+  ScrollRestoration
 } from "react-router";
+import { auth0Middleware } from "@auth0/auth0-react-router";
+import { auth0Client } from "./utils/auth0.server";
 
 import type { Route } from "./+types/root";
 import "./app.css";
+
+export const middleware: Route.MiddlewareFunction[] = [
+  auth0Middleware(auth0Client)
+];
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
     rel: "preconnect",
     href: "https://fonts.gstatic.com",
-    crossOrigin: "anonymous",
+    crossOrigin: "anonymous"
   },
   {
     rel: "stylesheet",
-    href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
-  },
+    href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
+  }
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {

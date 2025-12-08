@@ -44,3 +44,6 @@ export function Auth0(options: Auth0ReactRouterOptions) {
 
   return auth0Client;
 }
+
+export { auth0Middleware } from './auth0Middleware.js';
+export { authSplatLoader } from './authSplatLoader.js';
