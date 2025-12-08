@@ -49,3 +49,4 @@ export function Auth0(options?: Auth0ReactRouterOptions) {
 
 export { auth0Middleware, auth0Context, requireAuth } from './auth0Middleware.js';
 export { authSplatLoader } from './authSplatLoader.js';
+export { getAuth0, getUser } from './serverUtils.js';

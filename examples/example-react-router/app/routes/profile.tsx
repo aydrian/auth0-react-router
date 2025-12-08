@@ -1,16 +1,12 @@
-import { auth0Context, requireAuth } from "@auth0/auth0-react-router";
+import { getUser, requireAuth } from "@auth0/auth0-react-router";
 import type { Route } from "./+types/profile";
 
 export const middleware = [requireAuth];
 
 export async function loader({ context }: Route.LoaderArgs) {
-  const auth0 = context.get(auth0Context);
+  const user = getUser(context);
 
-  if (!auth0?.user) {
-    throw new Response(null, { status: 404 });
-  }
-
-  return { user: auth0?.user };
+  return { user };
 }
 
 export default function Profile({ loaderData }: Route.ComponentProps) {

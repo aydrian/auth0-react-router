@@ -1,6 +1,6 @@
 import type { Route } from "./+types/_index";
 import { Welcome } from "../welcome/welcome";
-import { auth0Context } from "@auth0/auth0-react-router";
+import { getAuth0, getUser } from "@auth0/auth0-react-router";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -10,15 +10,15 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export async function loader({ context }: Route.LoaderArgs) {
-  const auth0 = context.get(auth0Context);
+  const { isAuthenticated, user } = getAuth0(context);
 
-  return { user: auth0?.user };
+  return { isAuthenticated, user };
 }
 
 export default function Home({ loaderData }: Route.ComponentProps) {
-  const { user } = loaderData;
+  const { isAuthenticated, user } = loaderData;
 
-  if (!user) {
+  if (!isAuthenticated) {
     return <Welcome />;
   }
 
@@ -27,7 +27,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
       <div className="flex-1 flex flex-col items-center gap-16 min-h-0">
         <header className="flex flex-col items-center gap-9">
           <h1 className="text-2xl font-bold">
-            Welcome, {user.name || user.email || "User"}!
+            Welcome, {user?.name || user?.email || "User"}!
           </h1>
           <div className="flex gap-4 mt-4">
             <a
