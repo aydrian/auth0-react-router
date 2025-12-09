@@ -1,5 +1,6 @@
-import { auth0Context, Auth0ContextType } from './auth0Middleware.js';
+import { auth0Context } from './auth0Middleware.js';
 import type { LoaderFunctionArgs } from 'react-router';
+import { Auth0ContextType } from './types.js';
 
 export async function loginRoute({ request, context }: LoaderFunctionArgs) {
   const { appBaseUrl, auth0Client } = context.get(auth0Context) as Auth0ContextType;

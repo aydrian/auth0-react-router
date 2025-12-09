@@ -1,4 +1,4 @@
-import { ServerClient } from '@auth0/auth0-server-js';
+import type { ServerClient, SessionData, UserClaims } from '@auth0/auth0-server-js';
 
 export interface Auth0ReactRouterOptions {
   domain?: string;
@@ -16,3 +16,11 @@ export interface StoreOptions {
 export type Auth0MiddlewareOptions = Auth0ReactRouterOptions & {
   auth0Client?: ServerClient<StoreOptions>;
 };
+
+export interface Auth0ContextType {
+  auth0Client: ServerClient;
+  user?: UserClaims;
+  session?: SessionData;
+  isAuthenticated: boolean;
+  appBaseUrl: string;
+}

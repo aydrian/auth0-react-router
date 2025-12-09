@@ -1,5 +1,6 @@
-import { auth0Context, type Auth0ContextType } from './auth0Middleware.js';
+import { auth0Context } from './auth0Middleware.js';
 import type { RouterContextProvider } from 'react-router';
+import type { Auth0ContextType } from './types.js';
 
 export function getAuth0(context: Readonly<RouterContextProvider>) {
   const auth0 = context.get(auth0Context) as Auth0ContextType;

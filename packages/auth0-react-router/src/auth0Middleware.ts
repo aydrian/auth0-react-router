@@ -1,16 +1,8 @@
 import { createContext, MiddlewareFunction } from 'react-router';
-import type { ServerClient, SessionData, UserClaims } from '@auth0/auth0-server-js';
-import type { Auth0MiddlewareOptions } from './types.js';
+import type { Auth0ContextType, Auth0MiddlewareOptions } from './types.js';
 import { Auth0 } from './index.js';
 
 // Define the shape of the Auth0 context
-export interface Auth0ContextType {
-  auth0Client: ServerClient;
-  user?: UserClaims;
-  session?: SessionData;
-  isAuthenticated: boolean;
-  appBaseUrl: string;
-}
 
 // Create the Auth0 context
 export const auth0Context = createContext<Auth0ContextType | null>(null);
