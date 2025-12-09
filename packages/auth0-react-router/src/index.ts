@@ -5,28 +5,30 @@ import { ReactRouterSessionStore } from './store/react-router-session-store.js';
 import type { Auth0ReactRouterOptions } from './types.js';
 import { getAuth0Options } from './utils.js';
 
-const StateStorage = createCookieSessionStorage<StateData>({
-  cookie: {
-    name: '__a0_session',
-    httpOnly: true,
-    sameSite: 'lax',
-    path: '/',
-    secure: process.env.NODE_ENV === 'production',
-    secrets: [process.env.AUTH0_SECRET || 'dev-secret'],
-  },
-});
-const TransactionStorage = createCookieSessionStorage<TransactionData>({
-  cookie: {
-    name: '__a0_tx',
-    httpOnly: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    secrets: [process.env.AUTH0_SECRET || 'dev-secret'],
-  },
-});
-
 export function Auth0(options?: Auth0ReactRouterOptions) {
   const resolvedOptions = getAuth0Options(options);
+
+  const StateStorage = createCookieSessionStorage<StateData>({
+    cookie: {
+      name: '__a0_session',
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
+      secure: process.env.NODE_ENV === 'production',
+      secrets: [resolvedOptions.sessionSecret],
+    },
+  });
+
+  const TransactionStorage = createCookieSessionStorage<TransactionData>({
+    cookie: {
+      name: '__a0_tx',
+      httpOnly: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      secrets: [resolvedOptions.sessionSecret],
+    },
+  });
+
   const callbackPath = '/auth/callback';
   const redirectUri = new URL(callbackPath, resolvedOptions.appBaseUrl);
 
