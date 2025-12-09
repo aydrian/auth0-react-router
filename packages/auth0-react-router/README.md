@@ -18,7 +18,7 @@ This SDK provides seamless Auth0 authentication and route protection for React R
 ### 1. Install the SDK
 
 ```bash
-npm install auth0-react-router
+npm install @auth0/auth0-react-router
 ```
 
 ### 2. Enable Middleware in React Router
@@ -26,11 +26,13 @@ npm install auth0-react-router
 Add the future setting to your `react-router.config.ts`:
 
 ```typescript
+import type { Config } from '@react-router/dev/config';
+
 export default {
   future: {
-    middleware: true,
+    v8_middleware: true,
   },
-};
+} satisfies Config;
 ```
 
 ### 3. Configure Auth0ReactRouter
@@ -76,13 +78,10 @@ const auth0ReactRouter = Auth0ReactRouter({
 In your server entry or request handler setup, pass the `Auth0ReactRouterInstance` to the middleware:
 
 ```typescript
-import { auth0Middleware, Auth0ReactRouter } from 'auth0-react-router';
+import { auth0Middleware } from 'auth0-react-router';
 
-const auth0ReactRouter = Auth0ReactRouter({
-  /* options */
-});
-
-export const middleware = [auth0Middleware({ auth0ReactRouter })];
+// use defaults and environment variables
+export const middleware = [auth0Middleware()];
 ```
 
 ### 5. Add Auth Routes
