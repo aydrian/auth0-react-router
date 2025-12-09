@@ -3,14 +3,12 @@ import type { LoaderFunctionArgs } from 'react-router';
 import { Auth0ContextType } from './types.js';
 
 export async function loginRoute({ request, context }: LoaderFunctionArgs) {
-  const { appBaseUrl, auth0Client } = context.get(auth0Context) as Auth0ContextType;
-  // Build the Auth0 authorize URL and redirect
+  const { app, serverClient } = context.get(auth0Context) as Auth0ContextType;
   const url = new URL(request.url);
-  const returnTo = url.searchParams.get('returnTo') || appBaseUrl;
-  console.log({ returnTo });
+  const returnTo = url.searchParams.get('returnTo') || app.redirects.login;
 
   const response = new Response();
-  const authorizationUrl = await auth0Client.startInteractiveLogin(
+  const authorizationUrl = await serverClient.startInteractiveLogin(
     {
       appState: { returnTo },
     },
@@ -24,28 +22,27 @@ export async function loginRoute({ request, context }: LoaderFunctionArgs) {
 }
 
 export async function callbackRoute({ context, request }: LoaderFunctionArgs) {
-  const { appBaseUrl, auth0Client } = context.get(auth0Context) as Auth0ContextType;
+  const { app, serverClient } = context.get(auth0Context) as Auth0ContextType;
   const response = new Response();
-  const { appState } = await auth0Client.completeInteractiveLogin<{ returnTo: string }>(
-    new URL(request.url, appBaseUrl),
+  const { appState } = await serverClient.completeInteractiveLogin<{ returnTo: string }>(
+    new URL(request.url, app.baseUrl),
     {
       request,
       response,
     }
   );
-  console.log({ returnTo: appState?.returnTo });
 
   const headers = new Headers(response.headers);
-  headers.set('Location', appState?.returnTo || '/');
+  headers.set('Location', appState?.returnTo || app.redirects.login);
 
   return new Response(null, { status: 302, headers });
 }
 
 export async function logoutRoute({ request, context }: LoaderFunctionArgs) {
-  const { appBaseUrl, auth0Client } = context.get(auth0Context) as Auth0ContextType;
+  const { app, serverClient } = context.get(auth0Context) as Auth0ContextType;
   const response = new Response();
-  const returnTo = appBaseUrl;
-  const logoutUrl = await auth0Client.logout({ returnTo }, { request, response });
+  const returnTo = app.redirects.logout;
+  const logoutUrl = await serverClient.logout({ returnTo }, { request, response });
 
   const headers = new Headers(response.headers);
   headers.set('Location', logoutUrl.href);

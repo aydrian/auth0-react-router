@@ -33,31 +33,61 @@ export default {
 };
 ```
 
-### 3. Configure Auth0 Client
+### 3. Configure Auth0ReactRouter
 
-Set environment variables in your server environment:
+You can configure the SDK by passing options directly to `Auth0ReactRouter`, or by setting environment variables. If an option is not provided, `Auth0ReactRouter` will automatically pull from the following environment variables:
 
-- `AUTH0_DOMAIN`
-- `AUTH0_CLIENT_ID`
-- `AUTH0_CLIENT_SECRET`
-- `AUTH0_SECRET` (for session)
-- `APP_BASE_URL`
+**Supported Environment Variables:**
 
-Or pass these options directly to the SDK.
+- `AUTH0_DOMAIN`: Your Auth0 domain
+- `AUTH0_CLIENT_ID`: Your Auth0 client ID
+- `AUTH0_CLIENT_SECRET`: Your Auth0 client secret
+- `AUTH0_SECRET`: Secret for session encryption
+- `APP_BASE_URL`: The base URL of your app
+
+**Supported Options:**
+
+- `domain`: Your Auth0 domain
+- `clientId`: Your Auth0 client ID
+- `clientSecret`: Your Auth0 client secret
+- `sessionSecret`: Secret for session encryption
+- `appBaseUrl`: The base URL of your app
+- `authPath`: (optional) Path for auth routes (default: `/auth`)
+- `defaultLoginRedirect`: (optional) Default login redirect URL (default: appBaseUrl)
+- `defaultLogoutRedirect`: (optional) Default logout redirect URL (default: appBaseUrl)
+
+You can override any environment variable by passing the corresponding option directly:
+
+```typescript
+import { Auth0ReactRouter } from 'auth0-react-router';
+
+const auth0ReactRouter = Auth0ReactRouter({
+  domain: process.env.AUTH0_DOMAIN,
+  clientId: process.env.AUTH0_CLIENT_ID,
+  clientSecret: process.env.AUTH0_CLIENT_SECRET,
+  sessionSecret: process.env.AUTH0_SECRET,
+  appBaseUrl: process.env.APP_BASE_URL,
+  authPath: '/custom-auth', // Optional
+});
+```
 
 ### 4. Register Middleware
 
-In your server entry or request handler setup:
+In your server entry or request handler setup, pass the `Auth0ReactRouterInstance` to the middleware:
 
 ```typescript
-import { auth0Middleware } from 'auth0-react-router';
+import { auth0Middleware, Auth0ReactRouter } from 'auth0-react-router';
 
-export const middleware = [auth0Middleware()];
+const auth0ReactRouter = Auth0ReactRouter({
+  /* options */
+});
+
+export const middleware = [auth0Middleware({ auth0ReactRouter })];
 ```
 
 ### 5. Add Auth Routes
 
-Create a catchall route file for `/auth/*`:
+Create a catchall route file for your auth path (default `/auth/*`, or your custom path):
 
 ```typescript
 // app/routes/auth.$.ts

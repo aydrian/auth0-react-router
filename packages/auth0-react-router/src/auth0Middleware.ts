@@ -1,8 +1,6 @@
 import { createContext, MiddlewareFunction } from 'react-router';
 import type { Auth0ContextType, Auth0MiddlewareOptions } from './types.js';
-import { Auth0 } from './index.js';
-
-// Define the shape of the Auth0 context
+import { Auth0ReactRouter } from './index.js';
 
 // Create the Auth0 context
 export const auth0Context = createContext<Auth0ContextType | null>(null);
@@ -10,39 +8,31 @@ export const auth0Context = createContext<Auth0ContextType | null>(null);
 // Middleware to attach Auth0 client and user/session info to context
 export const auth0Middleware = (options?: Auth0MiddlewareOptions): MiddlewareFunction<Response> => {
   return async ({ request, context }, next) => {
-    let auth0Client;
     const opts = options || {};
+    const auth0ReactRouter = opts.auth0ReactRouter ?? Auth0ReactRouter(opts);
+    const { serverClient } = auth0ReactRouter;
 
-    // The App's Base URL must be set so we can add it to context to use in routes. Might be a better way.
-    let appBaseUrl = opts.appBaseUrl;
-    if (!appBaseUrl) {
-      appBaseUrl = typeof process !== 'undefined' ? process.env.APP_BASE_URL : undefined;
-    }
-    if (!appBaseUrl) {
-      throw new Error('Missing required appBaseUrl. Provide it in options or set APP_BASE_URL in the environment.');
-    }
-
-    if (!opts.auth0Client) {
-      auth0Client = Auth0(opts);
-    } else {
-      auth0Client = opts.auth0Client;
-    }
-
-    const user = await auth0Client.getUser({ request, response: new Response() });
-    const session = await auth0Client.getSession({ request, response: new Response() });
+    const user = await serverClient.getUser({ request, response: new Response() });
+    const session = await serverClient.getSession({ request, response: new Response() });
     const isAuthenticated = !!user;
+
     // Attach to context
-    context.set(auth0Context, { auth0Client, user, session, isAuthenticated, appBaseUrl });
+    context.set(auth0Context, {
+      ...auth0ReactRouter,
+      user,
+      session,
+      isAuthenticated,
+    });
     return next();
   };
 };
 
 export const requireAuth: MiddlewareFunction<Response> = async ({ context, request }, next) => {
-  const { isAuthenticated, appBaseUrl } = context.get(auth0Context) as Auth0ContextType;
+  const { isAuthenticated, app } = context.get(auth0Context) as Auth0ContextType;
   if (!isAuthenticated) {
     const url = new URL(request.url);
     const returnTo = url.pathname + url.search;
-    const loginUrl = `${appBaseUrl}/auth/login?returnTo=${encodeURIComponent(returnTo)}`;
+    const loginUrl = `${app.baseUrl}${app.authPath}/login?returnTo=${encodeURIComponent(returnTo)}`;
     return Response.redirect(loginUrl, 302);
   }
   return next();

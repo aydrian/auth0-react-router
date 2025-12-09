@@ -4,12 +4,16 @@ export function getAuth0Options(options?: Partial<Auth0ReactRouterOptions>): Req
   // Get values from environment variables
   const env = typeof process !== 'undefined' ? process.env : {};
 
+  const appBaseUrl = options?.appBaseUrl || env.APP_BASE_URL || '';
   const resolved: Required<Auth0ReactRouterOptions> = {
     domain: env.AUTH0_DOMAIN || '',
     clientId: env.AUTH0_CLIENT_ID || '',
     clientSecret: env.AUTH0_CLIENT_SECRET || '',
-    appBaseUrl: env.APP_BASE_URL || '',
+    appBaseUrl,
     sessionSecret: env.AUTH0_SECRET || '',
+    authPath: '/auth',
+    defaultLoginRedirect: options?.defaultLoginRedirect || appBaseUrl,
+    defaultLogoutRedirect: options?.defaultLogoutRedirect || appBaseUrl,
     ...options,
   };
 
