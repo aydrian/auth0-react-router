@@ -1,5 +1,6 @@
 import { getUser, requireAuth } from "@auth0/auth0-react-router";
 import type { Route } from "./+types/profile";
+import { useTranslation } from "react-i18next";
 
 export const middleware = [requireAuth];
 
@@ -11,6 +12,7 @@ export async function loader({ context }: Route.LoaderArgs) {
 
 export default function Profile({ loaderData }: Route.ComponentProps) {
   const { user } = loaderData;
+  const { t, i18n } = useTranslation();
 
   return (
     <div className="flex flex-col items-center justify-center bg-gray-50 flex-1 w-full">
@@ -19,7 +21,7 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
           {user.picture && (
             <img
               src={user.picture}
-              alt="Profile"
+              alt={t("profile.pictureAlt", "Profile")}
               className="w-16 h-16 rounded-full border"
             />
           )}
@@ -33,18 +35,28 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
         <div className="space-y-2">
           {user.nickname && (
             <div>
-              <span className="font-semibold">Nickname:</span> {user.nickname}
+              <span className="font-semibold">
+                {t("profile.nickname", "Nickname:")}
+              </span>{" "}
+              {user.nickname}
             </div>
           )}
           {user.updated_at && (
             <div>
-              <span className="font-semibold">Last Updated:</span>{" "}
-              {new Date(user.updated_at).toLocaleString()}
+              <span className="font-semibold">
+                {t("profile.lastUpdated", "Last Updated:")}
+              </span>{" "}
+              {new Date(user.updated_at).toLocaleString(
+                i18n.language || undefined
+              )}
             </div>
           )}
           {user.sub && (
             <div>
-              <span className="font-semibold">User ID:</span> {user.sub}
+              <span className="font-semibold">
+                {t("profile.userId", "User ID:")}
+              </span>{" "}
+              {user.sub}
             </div>
           )}
         </div>
@@ -53,7 +65,7 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
             href="/"
             className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow"
           >
-            &larr; Back to Home
+            &larr; {t("profile.backToHome", "Back to Home")}
           </a>
         </div>
       </div>
