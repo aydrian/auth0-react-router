@@ -1,5 +1,5 @@
 import type { Route } from "./+types/_index";
-import { Welcome } from "../welcome/welcome";
+import { Welcome } from "../../welcome/welcome";
 import { getAuth0 } from "@auth0/auth0-react-router";
 
 export function meta({}: Route.MetaArgs) {

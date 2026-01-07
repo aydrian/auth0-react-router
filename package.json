@@ -23,16 +23,16 @@
     "authentication",
     "authorization"
   ],
-  "packageManager": "npm@10.1.0",
+  "packageManager": "npm@11.7.0",
   "devDependencies": {
-    "@commitlint/cli": "^20.1.0",
-    "@commitlint/config-conventional": "^20.0.0",
+    "@commitlint/cli": "^20.3.0",
+    "@commitlint/config-conventional": "^20.3.0",
     "husky": "^9.1.7",
-    "turbo": "^2.4.4",
-    "typedoc": "^0.28.7"
+    "turbo": "^2.7.3",
+    "typedoc": "^0.28.15"
   },
   "dependencies": {
-    "@auth0/auth0-server-js": "^1.1.0",
-    "react-router": "^7.10.1"
+    "@auth0/auth0-server-js": "^1.2.0",
+    "react-router": "^7.11.0"
   }
 }

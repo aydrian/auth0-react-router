@@ -11,19 +11,9 @@ export async function loader({ context }: Route.LoaderArgs) {
 
 export default function Profile({ loaderData }: Route.ComponentProps) {
   const { user } = loaderData;
-  if (!user) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen">
-        <div className="bg-red-100 text-red-700 p-6 rounded shadow">
-          <h2 className="text-xl font-bold mb-2">No user profile found</h2>
-          <p>Please log in to view your profile.</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-gray-50">
+    <div className="flex flex-col items-center justify-center bg-gray-50 flex-1 w-full">
       <div className="bg-white p-8 rounded shadow-lg w-full max-w-md">
         <div className="flex items-center space-x-4 mb-6">
           {user.picture && (
