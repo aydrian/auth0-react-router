@@ -11,7 +11,8 @@
     "test": "turbo run test",
     "lint": "turbo run lint",
     "docs": "typedoc",
-    "prepare": "husky"
+    "prepare": "husky",
+    "postinstall": "test -d packages/auth0-react-router/dist || npm run build"
   },
   "author": "",
   "license": "ISC",
