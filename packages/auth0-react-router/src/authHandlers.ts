@@ -156,8 +156,9 @@ export async function logoutRoute({ request, context }: LoaderFunctionArgs) {
  *
  * Query parameters:
  * - `connection` (required) - The identity provider connection to link (e.g., 'google-oauth2', 'github')
- * - `connectionScope` (optional) - OAuth scopes to request from the connection. Defaults to 'profile'.
+ * - `scopes` (optional, repeatable) - Provider-specific OAuth scopes. Defaults to 'profile'.
  * - `returnTo` (optional) - URL to redirect to after successful linking. Defaults to configured login redirect.
+ * - Any other query parameters are passed through as authorization parameters (e.g., `scope`, `audience`)
  *
  * @example
  * ```typescript
@@ -166,8 +167,17 @@ export async function logoutRoute({ request, context }: LoaderFunctionArgs) {
  *
  * export const loader = connectAccountRoute;
  *
- * // Link a Google account
+ * // Basic account linking (uses default scope 'profile')
  * // GET /auth/connect-account?connection=google-oauth2&returnTo=/profile
+ *
+ * // Request Google Calendar permissions (multiple scopes)
+ * // GET /auth/connect-account?connection=google-oauth2&scopes=profile&scopes=email&scopes=https://www.googleapis.com/auth/calendar&returnTo=/profile
+ *
+ * // Request GitHub repo access
+ * // GET /auth/connect-account?connection=github&scopes=user:email&scopes=repo&returnTo=/profile
+ *
+ * // Pass additional authorization parameters (OAuth scope, audience)
+ * // GET /auth/connect-account?connection=google-oauth2&scopes=profile&scopes=email&scope=openid%20profile%20email%20offline_access&audience=https://api.example.com&returnTo=/profile
  * ```
  */
 export async function connectAccountRoute({ request, context }: LoaderFunctionArgs) {
@@ -181,12 +191,24 @@ export async function connectAccountRoute({ request, context }: LoaderFunctionAr
 
     const url = new URL(request.url);
     const connection = url.searchParams.get('connection');
-    const connectionScope = url.searchParams.get('connectionScope') || 'profile';
     const returnTo = url.searchParams.get('returnTo') || app.redirects.login;
+    const scopes = url.searchParams.getAll('scopes');
 
     if (!connection) {
       throw new Response('Missing required parameter: connection', { status: 400 });
     }
+
+    // Build connectionScope from scopes array (join with spaces)
+    // Default to 'profile' if no scopes provided
+    const connectionScope = scopes.length > 0 ? scopes.join(' ') : 'profile';
+
+    // Pass through all other query params as authorizationParams
+    // Filter out reserved params: connection, returnTo, scopes
+    const authorizationParams = Object.fromEntries(
+      [...url.searchParams.entries()].filter(
+        ([key]) => key !== 'connection' && key !== 'returnTo' && key !== 'scopes'
+      )
+    );
 
     const response = new Response();
     const authorizationUrl = await serverClient.startLinkUser(
@@ -194,6 +216,7 @@ export async function connectAccountRoute({ request, context }: LoaderFunctionAr
         connection,
         connectionScope,
         appState: { returnTo },
+        ...(Object.keys(authorizationParams).length > 0 && { authorizationParams }),
       },
       { request, response }
     );
