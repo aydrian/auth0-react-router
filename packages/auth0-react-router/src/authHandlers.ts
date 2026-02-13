@@ -1,137 +1,374 @@
-import { auth0Context } from './auth0Middleware.js';
 import type { LoaderFunctionArgs } from 'react-router';
-import { Auth0ContextType } from './types.js';
+import { getAuth0, createRedirectResponse } from './serverUtils.js';
 
+/**
+ * Initiates an Auth0 interactive login flow.
+ *
+ * Starts the OAuth 2.0 authorization code flow by redirecting the user to Auth0's
+ * authorization endpoint. Preserves the requested destination in appState for
+ * post-login redirect.
+ *
+ * @param args.request - The incoming HTTP request
+ * @param args.context - React Router context containing Auth0 instance
+ *
+ * @returns A 302 redirect response to Auth0's authorization endpoint with session cookies
+ *
+ * @throws {Response} 500 - If Auth0 context is missing or login initiation fails
+ *
+ * Query parameters:
+ * - `returnTo` (optional) - URL to redirect to after successful login. Defaults to configured login redirect.
+ *
+ * @example
+ * ```typescript
+ * // In your route file
+ * import { loginRoute } from '@auth0/auth0-react-router';
+ *
+ * export const loader = loginRoute;
+ * ```
+ */
 export async function loginRoute({ request, context }: LoaderFunctionArgs) {
-  const { app, serverClient } = context.get(auth0Context) as Auth0ContextType;
-  const url = new URL(request.url);
-  const returnTo = url.searchParams.get('returnTo') || app.redirects.login;
+  try {
+    const { app, serverClient } = getAuth0(context);
+    const url = new URL(request.url);
+    const returnTo = url.searchParams.get('returnTo') || app.redirects.login;
 
-  const response = new Response();
-  const authorizationUrl = await serverClient.startInteractiveLogin(
-    {
-      appState: { returnTo },
-    },
-    { request, response }
-  );
+    const response = new Response();
+    const authorizationUrl = await serverClient.startInteractiveLogin(
+      {
+        appState: { returnTo },
+      },
+      { request, response }
+    );
 
-  const headers = new Headers(response.headers);
-  headers.set('Location', authorizationUrl.href);
-
-  return new Response(null, { status: 302, headers });
+    return createRedirectResponse(response, authorizationUrl);
+  } catch (error) {
+    if (error instanceof Response) throw error;
+    console.error('Login failed:', error);
+    throw new Response(
+      `Authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      { status: 500 }
+    );
+  }
 }
 
+/**
+ * Completes the Auth0 interactive login flow.
+ *
+ * Handles the OAuth 2.0 authorization callback from Auth0, exchanges the authorization
+ * code for tokens, establishes a session, and redirects the user to their intended
+ * destination.
+ *
+ * @param args.context - React Router context containing Auth0 instance
+ * @param args.request - The incoming HTTP request with Auth0 callback parameters
+ *
+ * @returns A 302 redirect response to the returnTo URL (from appState) or default login redirect
+ *
+ * @throws {Response} 500 - If Auth0 context is missing or callback processing fails
+ *
+ * Query parameters (provided by Auth0):
+ * - `code` - Authorization code from Auth0
+ * - `state` - State parameter for CSRF protection
+ *
+ * @example
+ * ```typescript
+ * // In your route file
+ * import { callbackRoute } from '@auth0/auth0-react-router';
+ *
+ * export const loader = callbackRoute;
+ * ```
+ */
 export async function callbackRoute({ context, request }: LoaderFunctionArgs) {
-  const { app, serverClient } = context.get(auth0Context) as Auth0ContextType;
-  const response = new Response();
-  const { appState } = await serverClient.completeInteractiveLogin<{ returnTo: string }>(
-    new URL(request.url, app.baseUrl),
-    {
-      request,
-      response,
-    }
-  );
+  try {
+    const { app, serverClient } = getAuth0(context);
+    const response = new Response();
+    const { appState } = await serverClient.completeInteractiveLogin<{ returnTo: string }>(
+      new URL(request.url, app.baseUrl),
+      {
+        request,
+        response,
+      }
+    );
 
-  const headers = new Headers(response.headers);
-  headers.set('Location', appState?.returnTo || app.redirects.login);
-
-  return new Response(null, { status: 302, headers });
+    return createRedirectResponse(response, appState?.returnTo || app.redirects.login);
+  } catch (error) {
+    if (error instanceof Response) throw error;
+    console.error('Login callback failed:', error);
+    throw new Response(
+      `Authentication callback failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      { status: 500 }
+    );
+  }
 }
 
+/**
+ * Initiates an Auth0 logout flow.
+ *
+ * Terminates the user's Auth0 session and redirects to Auth0's logout endpoint,
+ * which then redirects back to the configured logout URL.
+ *
+ * @param args.request - The incoming HTTP request
+ * @param args.context - React Router context containing Auth0 instance
+ *
+ * @returns A 302 redirect response to Auth0's logout endpoint
+ *
+ * @throws {Response} 500 - If Auth0 context is missing or logout initiation fails
+ *
+ * @example
+ * ```typescript
+ * // In your route file
+ * import { logoutRoute } from '@auth0/auth0-react-router';
+ *
+ * export const loader = logoutRoute;
+ * ```
+ */
 export async function logoutRoute({ request, context }: LoaderFunctionArgs) {
-  const { app, serverClient } = context.get(auth0Context) as Auth0ContextType;
-  const response = new Response();
-  const returnTo = app.redirects.logout;
-  const logoutUrl = await serverClient.logout({ returnTo }, { request, response });
+  try {
+    const { app, serverClient } = getAuth0(context);
+    const response = new Response();
+    const returnTo = app.redirects.logout;
+    const logoutUrl = await serverClient.logout({ returnTo }, { request, response });
 
-  const headers = new Headers(response.headers);
-  headers.set('Location', logoutUrl.href);
-
-  return new Response(null, { status: 302, headers });
+    return createRedirectResponse(response, logoutUrl);
+  } catch (error) {
+    if (error instanceof Response) throw error;
+    console.error('Logout failed:', error);
+    throw new Response(
+      `Logout failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      { status: 500 }
+    );
+  }
 }
 
+/**
+ * Initiates an Auth0 account linking flow.
+ *
+ * Starts the process of linking an additional identity provider account to the
+ * currently authenticated user. Requires the user to be authenticated.
+ *
+ * @param args.request - The incoming HTTP request
+ * @param args.context - React Router context containing Auth0 instance
+ *
+ * @returns A 302 redirect response to Auth0's authorization endpoint for account linking
+ *
+ * @throws {Response} 400 - If required 'connection' parameter is missing
+ * @throws {Response} 401 - If user is not authenticated
+ * @throws {Response} 500 - If Auth0 context is missing or account linking initiation fails
+ *
+ * Query parameters:
+ * - `connection` (required) - The identity provider connection to link (e.g., 'google-oauth2', 'github')
+ * - `connectionScope` (optional) - OAuth scopes to request from the connection. Defaults to 'profile'.
+ * - `returnTo` (optional) - URL to redirect to after successful linking. Defaults to configured login redirect.
+ *
+ * @example
+ * ```typescript
+ * // In your route file
+ * import { connectAccountRoute } from '@auth0/auth0-react-router';
+ *
+ * export const loader = connectAccountRoute;
+ *
+ * // Link a Google account
+ * // GET /auth/connect-account?connection=google-oauth2&returnTo=/profile
+ * ```
+ */
 export async function connectAccountRoute({ request, context }: LoaderFunctionArgs) {
-  const { app, serverClient } = context.get(auth0Context) as Auth0ContextType;
-  const url = new URL(request.url);
-  const connection = url.searchParams.get('connection');
-  const connectionScope = url.searchParams.get('connectionScope') || 'profile';
-  const returnTo = url.searchParams.get('returnTo') || app.redirects.login;
+  try {
+    const auth0 = getAuth0(context);
+    const { app, serverClient, isAuthenticated } = auth0;
 
-  if (!connection) {
-    throw new Response('Missing required parameter: connection', { status: 400 });
+    if (!isAuthenticated) {
+      throw new Response('User must be authenticated to connect an account', { status: 401 });
+    }
+
+    const url = new URL(request.url);
+    const connection = url.searchParams.get('connection');
+    const connectionScope = url.searchParams.get('connectionScope') || 'profile';
+    const returnTo = url.searchParams.get('returnTo') || app.redirects.login;
+
+    if (!connection) {
+      throw new Response('Missing required parameter: connection', { status: 400 });
+    }
+
+    const response = new Response();
+    const authorizationUrl = await serverClient.startLinkUser(
+      {
+        connection,
+        connectionScope,
+        appState: { returnTo },
+      },
+      { request, response }
+    );
+
+    return createRedirectResponse(response, authorizationUrl);
+  } catch (error) {
+    if (error instanceof Response) throw error;
+    console.error('Connect account failed:', error);
+    throw new Response(
+      `Connect account failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      { status: 500 }
+    );
   }
-
-  const response = new Response();
-  const authorizationUrl = await serverClient.startLinkUser(
-    {
-      connection,
-      connectionScope,
-      appState: { returnTo },
-    },
-    { request, response }
-  );
-
-  const headers = new Headers(response.headers);
-  headers.set('Location', authorizationUrl.href);
-
-  return new Response(null, { status: 302, headers });
 }
 
+/**
+ * Completes the Auth0 account linking flow.
+ *
+ * Handles the OAuth callback from Auth0 after the user has authenticated with the
+ * additional identity provider. Links the new identity to the user's existing account
+ * and redirects to the intended destination.
+ *
+ * @param args.context - React Router context containing Auth0 instance
+ * @param args.request - The incoming HTTP request with Auth0 callback parameters
+ *
+ * @returns A 302 redirect response to the returnTo URL (from appState) or default login redirect
+ *
+ * @throws {Response} 500 - If Auth0 context is missing or callback processing fails
+ *
+ * Query parameters (provided by Auth0):
+ * - `code` - Authorization code from Auth0
+ * - `state` - State parameter for CSRF protection
+ *
+ * @example
+ * ```typescript
+ * // In your route file
+ * import { connectAccountCallbackRoute } from '@auth0/auth0-react-router';
+ *
+ * export const loader = connectAccountCallbackRoute;
+ * ```
+ */
 export async function connectAccountCallbackRoute({ context, request }: LoaderFunctionArgs) {
-  const { app, serverClient } = context.get(auth0Context) as Auth0ContextType;
-  const response = new Response();
-  const { appState } = await serverClient.completeLinkUser<{ returnTo: string }>(
-    new URL(request.url, app.baseUrl),
-    {
-      request,
-      response,
-    }
-  );
+  try {
+    const { app, serverClient } = getAuth0(context);
+    const response = new Response();
+    const { appState } = await serverClient.completeLinkUser<{ returnTo: string }>(
+      new URL(request.url, app.baseUrl),
+      {
+        request,
+        response,
+      }
+    );
 
-  const headers = new Headers(response.headers);
-  headers.set('Location', appState?.returnTo || app.redirects.login);
-
-  return new Response(null, { status: 302, headers });
-}
-
-export async function disconnectAccountRoute({ request, context }: LoaderFunctionArgs) {
-  const { app, serverClient } = context.get(auth0Context) as Auth0ContextType;
-  const url = new URL(request.url);
-  const connection = url.searchParams.get('connection');
-  const returnTo = url.searchParams.get('returnTo') || app.redirects.login;
-
-  if (!connection) {
-    throw new Response('Missing required parameter: connection', { status: 400 });
+    return createRedirectResponse(response, appState?.returnTo || app.redirects.login);
+  } catch (error) {
+    if (error instanceof Response) throw error;
+    console.error('Connect account callback failed:', error);
+    throw new Response(
+      `Connect account callback failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      { status: 500 }
+    );
   }
-
-  const response = new Response();
-  const authorizationUrl = await serverClient.startUnlinkUser(
-    {
-      connection,
-      appState: { returnTo },
-    },
-    { request, response }
-  );
-
-  const headers = new Headers(response.headers);
-  headers.set('Location', authorizationUrl.href);
-
-  return new Response(null, { status: 302, headers });
 }
 
-export async function disconnectAccountCallbackRoute({ context, request }: LoaderFunctionArgs) {
-  const { app, serverClient } = context.get(auth0Context) as Auth0ContextType;
-  const response = new Response();
-  const { appState } = await serverClient.completeUnlinkUser<{ returnTo: string }>(
-    new URL(request.url, app.baseUrl),
-    {
-      request,
-      response,
+/**
+ * Initiates an Auth0 account unlinking flow.
+ *
+ * Starts the process of unlinking an identity provider account from the currently
+ * authenticated user. Requires the user to be authenticated.
+ *
+ * @param args.request - The incoming HTTP request
+ * @param args.context - React Router context containing Auth0 instance
+ *
+ * @returns A 302 redirect response to Auth0's authorization endpoint for account unlinking
+ *
+ * @throws {Response} 400 - If required 'connection' parameter is missing
+ * @throws {Response} 401 - If user is not authenticated
+ * @throws {Response} 500 - If Auth0 context is missing or account unlinking initiation fails
+ *
+ * Query parameters:
+ * - `connection` (required) - The identity provider connection to unlink (e.g., 'google-oauth2', 'github')
+ * - `returnTo` (optional) - URL to redirect to after successful unlinking. Defaults to configured login redirect.
+ *
+ * @example
+ * ```typescript
+ * // In your route file
+ * import { disconnectAccountRoute } from '@auth0/auth0-react-router';
+ *
+ * export const loader = disconnectAccountRoute;
+ *
+ * // Unlink a Google account
+ * // GET /auth/disconnect-account?connection=google-oauth2&returnTo=/profile
+ * ```
+ */
+export async function disconnectAccountRoute({ request, context }: LoaderFunctionArgs) {
+  try {
+    const auth0 = getAuth0(context);
+    const { app, serverClient, isAuthenticated } = auth0;
+
+    if (!isAuthenticated) {
+      throw new Response('User must be authenticated to disconnect an account', { status: 401 });
     }
-  );
 
-  const headers = new Headers(response.headers);
-  headers.set('Location', appState?.returnTo || app.redirects.login);
+    const url = new URL(request.url);
+    const connection = url.searchParams.get('connection');
+    const returnTo = url.searchParams.get('returnTo') || app.redirects.login;
 
-  return new Response(null, { status: 302, headers });
+    if (!connection) {
+      throw new Response('Missing required parameter: connection', { status: 400 });
+    }
+
+    const response = new Response();
+    const authorizationUrl = await serverClient.startUnlinkUser(
+      {
+        connection,
+        appState: { returnTo },
+      },
+      { request, response }
+    );
+
+    return createRedirectResponse(response, authorizationUrl);
+  } catch (error) {
+    if (error instanceof Response) throw error;
+    console.error('Disconnect account failed:', error);
+    throw new Response(
+      `Disconnect account failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * Completes the Auth0 account unlinking flow.
+ *
+ * Handles the OAuth callback from Auth0 after unlinking the identity provider
+ * from the user's account. Redirects to the intended destination.
+ *
+ * @param args.context - React Router context containing Auth0 instance
+ * @param args.request - The incoming HTTP request with Auth0 callback parameters
+ *
+ * @returns A 302 redirect response to the returnTo URL (from appState) or default login redirect
+ *
+ * @throws {Response} 500 - If Auth0 context is missing or callback processing fails
+ *
+ * Query parameters (provided by Auth0):
+ * - `code` - Authorization code from Auth0
+ * - `state` - State parameter for CSRF protection
+ *
+ * @example
+ * ```typescript
+ * // In your route file
+ * import { disconnectAccountCallbackRoute } from '@auth0/auth0-react-router';
+ *
+ * export const loader = disconnectAccountCallbackRoute;
+ * ```
+ */
+export async function disconnectAccountCallbackRoute({ context, request }: LoaderFunctionArgs) {
+  try {
+    const { app, serverClient } = getAuth0(context);
+    const response = new Response();
+    const { appState } = await serverClient.completeUnlinkUser<{ returnTo: string }>(
+      new URL(request.url, app.baseUrl),
+      {
+        request,
+        response,
+      }
+    );
+
+    return createRedirectResponse(response, appState?.returnTo || app.redirects.login);
+  } catch (error) {
+    if (error instanceof Response) throw error;
+    console.error('Disconnect account callback failed:', error);
+    throw new Response(
+      `Disconnect account callback failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      { status: 500 }
+    );
+  }
 }

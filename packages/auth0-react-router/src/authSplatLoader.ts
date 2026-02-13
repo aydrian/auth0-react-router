@@ -28,6 +28,6 @@ export async function authSplatLoader(args: LoaderFunctionArgs) {
     case 'disconnect-account/callback':
       return disconnectAccountCallbackRoute(args);
     default:
-      throw new Response('Not Found', { status: 404 });
+      throw new Response(`Auth route not found: ${params['*']}`, { status: 404 });
   }
 }

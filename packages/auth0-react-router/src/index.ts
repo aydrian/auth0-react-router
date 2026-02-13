@@ -77,7 +77,7 @@ export {
   disconnectAccountRoute,
   disconnectAccountCallbackRoute,
 } from './authHandlers.js';
-export { getAuth0, getUser } from './serverUtils.js';
+export { getAuth0, getUser, createRedirectResponse } from './serverUtils.js';
 export type {
   Auth0ReactRouterOptions,
   Auth0ReactRouterInstance,

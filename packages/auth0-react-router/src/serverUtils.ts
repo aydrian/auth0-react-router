@@ -24,3 +24,21 @@ export function getUser(context: Readonly<RouterContextProvider>) {
 
   return user;
 }
+
+/**
+ * Creates a redirect response preserving cookies/headers from Auth0 operations.
+ *
+ * @param response - The response object that may contain Set-Cookie headers from Auth0
+ * @param location - The URL to redirect to
+ * @param status - HTTP status code (default: 302)
+ * @returns A Response object with redirect and preserved headers
+ */
+export function createRedirectResponse(
+  response: Response,
+  location: string | URL,
+  status: number = 302
+): Response {
+  const headers = new Headers(response.headers);
+  headers.set('Location', typeof location === 'string' ? location : location.href);
+  return new Response(null, { status, headers });
+}
