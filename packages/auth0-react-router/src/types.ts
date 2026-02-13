@@ -37,3 +37,9 @@ export type Auth0ContextType = Auth0ReactRouterInstance & {
   session?: SessionData;
   isAuthenticated: boolean;
 };
+
+// Export types for account linking and unlinking
+export type {
+  StartLinkUserOptions,
+  StartUnlinkUserOptions,
+} from '@auth0/auth0-server-js';

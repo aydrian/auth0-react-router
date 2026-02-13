@@ -68,4 +68,20 @@ export function Auth0ReactRouter(options?: Auth0ReactRouterOptions): Auth0ReactR
 
 export { auth0Middleware, auth0Context, requireAuth } from './auth0Middleware.js';
 export { authSplatLoader } from './authSplatLoader.js';
+export {
+  loginRoute,
+  callbackRoute,
+  logoutRoute,
+  connectAccountRoute,
+  connectAccountCallbackRoute,
+  disconnectAccountRoute,
+  disconnectAccountCallbackRoute,
+} from './authHandlers.js';
 export { getAuth0, getUser } from './serverUtils.js';
+export type {
+  Auth0ReactRouterOptions,
+  Auth0ReactRouterInstance,
+  Auth0ContextType,
+  StartLinkUserOptions,
+  StartUnlinkUserOptions,
+} from './types.js';
